@@ -72,6 +72,10 @@ end
 
     GatherSymbol = gather(pids, :x)
     @test sum(GatherSymbol) == sum(pids)
+
+    bcast(pids, c = pi / 2)
+    d = gather(pids, sin, :c)
+    @test sum(d) == 4.0
 end
 
 rmprocs(pids)

@@ -2,7 +2,7 @@
 
 *Basic parallel algorithms for Julia*
 
-![](https://github.com/JuliaAstroSim/ParallelOperations.jl/workflows/.github/workflows/CI.yml/badge.svg)
+[![codecov](https://codecov.io/gh/JuliaAstroSim/ParallelOperations.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaAstroSim/ParallelOperations.jl)
 
 ## Install
 

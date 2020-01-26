@@ -79,6 +79,6 @@ function gather(pids::Array, expr, mod=Main)
     return results
 end
 
-gather(f::Function, pids::Array{Integer}, expr, mod=Main) = gather(pids, :($f($expr)), mod)
+gather(pids::Array, f::Function, expr, mod=Main) = gather(pids, :($f($expr)), mod)
 
 end
