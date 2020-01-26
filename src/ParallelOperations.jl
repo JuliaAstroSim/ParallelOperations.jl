@@ -16,11 +16,11 @@ export
 # point-to-point
 
 function sendto(p::Int, expr, data, mod = Main)
-    @spawnat(p, Core.eval(mod, Expr(:(=), expr, data)))
+    @sync @spawnat(p, Core.eval(mod, Expr(:(=), expr, data)))
 end
 
 function sendto(p::Int, mod = Main; args...)
-    for (nm, val) in args
+    @sync for (nm, val) in args
         @spawnat(p, Core.eval(mod, Expr(:(=), nm, val)))
     end
 end
@@ -36,7 +36,7 @@ end
 function transfer(src::Int, target::Int, from_expr, to_expr, to_mod = Main, from_mod = Main)
     r = RemoteChannel(src)
     @spawnat(src, put!(r, Core.eval(from_mod, from_expr)))
-    @spawnat(target, Core.eval(to_mod, Expr(:(=), to_expr, fetch(r))))
+    @sync @spawnat(target, Core.eval(to_mod, Expr(:(=), to_expr, fetch(r))))
 end
 
 # broadcast
