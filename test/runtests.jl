@@ -3,8 +3,8 @@ using Distributed
 
 using ParallelOperations
 
-addprocs(4)
-@everywhere workers() using ParallelOperations
+pids = addprocs(4)
+@everywhere pids using ParallelOperations
 @everywhere struct TestStruct
     a
     b
@@ -12,24 +12,66 @@ end
 @everywhere iterate(p::TestStruct) = (p, nothing)
 @everywhere iterate(p::TestStruct, st) = nothing
 
-@everywhere workers() teststruct = TestStruct(myid(), collect(1:5) .+ myid())
+@everywhere procs() function f(a::Array)
+    for i in eachindex(a)
+        a[i] = sin(a[i])
+    end
+end
 
-@everywhere workers() x = myid()
+@everywhere pids teststruct = TestStruct(myid(), collect(1:5) .+ myid())
+
+@everywhere pids x = myid()
+
+@testset "point-to-point" begin
+    a = collect(1:3)
+    sendto(pids[1], :p2p, a)
+    b = getfrom(pids[1], :p2p)
+    @test sum(a) == sum(b)
+
+    sendto(pids[2], a = 1.0)
+    b = getfrom(pids[2], :a)
+    @test b == 1.0
+
+    sendto(pids[3], a = [pi/2])
+    sendto(pids[3], f, :a)
+    b = getfrom(pids[3], :(a[1]))
+    @test b == 1.0
+
+    transfer(pids[3], pids[4], :a, :a)
+    b = getfrom(pids[4], :(a[1]))
+    @test b == 1.0
+end
+
+@testset "broadcast" begin
+    c = 1.0
+    bcast(pids, :c, c)
+    d = gather(pids, :c)
+    @test sum(d) == 4.0
+
+    bcast(pids, c = myid())
+    d = gather(pids, :c)
+    @test sum(d) == 4.0
+
+    bcast(pids, c = [pi/2])
+    bcast(pids, f, :c)
+    d = gather(pids, :(c[1]))
+    @test sum(d) == 4.0
+end
 
 @testset "Reduce" begin
-    ReduceExpr = reduce(max, workers(), :(teststruct.b))
+    ReduceExpr = reduce(max, pids, :(teststruct.b))
     @test ReduceExpr == 10
 
-    ReduceSymbol = reduce(max, workers(), :x)
+    ReduceSymbol = reduce(max, pids, :x)
     @test ReduceSymbol == 5
 end
 
 @testset "Gather" begin
-    GatherExpr = gather(workers(), :(teststruct.a))
-    @test sum(GatherExpr) == sum(workers())
+    GatherExpr = gather(pids, :(teststruct.a))
+    @test sum(GatherExpr) == sum(pids)
 
-    GatherSymbol = gather(workers(), :x)
-    @test sum(GatherSymbol) == sum(workers())
+    GatherSymbol = gather(pids, :x)
+    @test sum(GatherSymbol) == sum(pids)
 end
 
-rmprocs(workers())
+rmprocs(pids)
