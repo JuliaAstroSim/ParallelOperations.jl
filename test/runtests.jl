@@ -58,6 +58,15 @@ end
     @test sum(d) == 4.0
 end
 
+@testset "scatter" begin
+    a = collect(1:4)
+    scatter(pids, a, :b, Main)
+    b = gather(pids, :b, Main)
+    @test sum(a) == sum(b)
+
+    @test_throws ErrorException scatter(pids, collect(1:5), :b, Main)
+end
+
 @testset "Reduce" begin
     ReduceExpr = reduce(max, pids, :(teststruct.b))
     @test ReduceExpr == 10
@@ -76,6 +85,30 @@ end
     bcast(pids, c = pi / 2)
     d = gather(pids, sin, :c)
     @test sum(d) == 4.0
+end
+
+@testset "Allgather" begin
+    bcast(pids, a = 1.0)
+    allgather(pids, :a)
+    b = gather(pids, :a)
+    @test sum(sum(b)) == 16.0
+
+    bcast(pids, a = 1.0)
+    allgather(pids, :a, :b)
+    b = gather(pids, :b)
+    @test sum(sum(b)) == 16.0
+end
+
+@testset "Allreduce" begin
+    @everywhere pids a = myid()
+    allreduce(max, pids, :a)
+    b = gather(pids, :a)
+    @test sum(b) == 20.0
+
+    @everywhere pids a = myid()
+    allreduce(max, pids, :a, :b)
+    b = gather(pids, :b)
+    @test sum(b) == 20.0
 end
 
 rmprocs(pids)

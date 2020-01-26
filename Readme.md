@@ -40,8 +40,10 @@ function f!(a::Array)
         a[i] = sin(a[i])
     end
 end
+```
+### Point-to-point
 
-# point-to-point
+```julia
 ## Define a variable on worker and get it back
 sendto(2, a = 1.0)
 b = getfrom(2, :a)
@@ -64,27 +66,56 @@ sendto(2, :(s.y), 456.0)
 ## Transfer data from worker 2 to worker 3, and change symbol name
 transfer(2, 3, :a, :b)
 @everywhere 3 @show b
+```
 
+### broadcast
 
-# broadcast & gather
+```julia
 bcast(workers(), :c, 1.0, Parallel)
 
 bcast(workers(), c = [pi/2])
 
 bcast(workers(), f!, :c)
+```
+
+### gather
+
+Gathering is executed in the order of the first parameter
+
+```julia
 d = gather(workers(), :(c[1]))
 @test d == 4.0
 
-# reduce
-@everywhere workers() teststruct = TestStruct(myid(), collect(1:5) .+ myid())
-M = reduce(max, workers(), :(teststruct.b))
+
+bcast(pids, a = 1.0)
+allgather(pids, :a, :b) # allgather data to new symbol (option)
+                        # If ok with unstable type, you could use `allgather(pids, :a)`
+b = gather(pids, :b)
+@test sum(sum(b)) == 16.0
 ```
 
-## To-do list
+### reduce
 
-- scatter
-- allgather
-- allreduce
+```julia
+@everywhere workers() teststruct = TestStruct(myid(), collect(1:5) .+ myid())
+M = reduce(max, workers(), :(teststruct.b))
+
+
+@everywhere pids a = myid()
+allreduce(max, pids, :a) # allreduce data. Use allreduce(max, pids, :a, :b) for new symbol :b
+b = gather(pids, :a)
+@test sum(b) == 20.0
+```
+
+### Scatter
+
+The array to scatter should have the same length as workers to receive
+
+```julia
+a = collect(1:4)
+scatter(workers(), a, :b, Main)
+@everywhere workers() @show b
+```
 
 ## Similar packages
 
