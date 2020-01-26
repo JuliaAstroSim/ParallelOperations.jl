@@ -2,7 +2,7 @@
 
 *Basic parallel algorithms for Julia*
 
-![](https://github.com/JuliaAstroSim/PhysicalParticles.jl/workflows/.github/workflows/CI.yml/badge.svg)
+![](https://github.com/JuliaAstroSim/ParallelOperations.jl/workflows/.github/workflows/CI.yml/badge.svg)
 
 ## Install
 
