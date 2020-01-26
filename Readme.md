@@ -34,7 +34,7 @@ end
 @everywhere iterate(p::TestStruct) = (p, nothing)
 @everywhere iterate(p::TestStruct, st) = nothing
 
-# Functions to executed on remote workers should be defined on source worker
+# Functions to execute on remote workers should be defined on source worker
 function f!(a::Array)
     for i in eachindex(a)
         a[i] = sin(a[i])
@@ -42,7 +42,7 @@ function f!(a::Array)
 end
 
 # point-to-point
-## Define a variable on worker and get back
+## Define a variable on worker and get it back
 sendto(2, a = 1.0)
 b = getfrom(2, :a)
 @test b == 1.0
@@ -79,6 +79,12 @@ d = gather(workers(), :(c[1]))
 @everywhere workers() teststruct = TestStruct(myid(), collect(1:5) .+ myid())
 M = reduce(max, workers(), :(teststruct.b))
 ```
+
+## To-do list
+
+- scatter
+- allgather
+- allreduce
 
 ## Similar packages
 
