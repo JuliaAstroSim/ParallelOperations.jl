@@ -1,10 +1,24 @@
+#=
+using Test
+using Distributed
+pids = addprocs(4)
+@everywhere include("ParallelOperations.jl/src/ParallelOperations.jl")
+@everywhere using Main.ParallelOperations
+
+@sendto pids a = myid()
+@getfrom 2 a
+@bcast pids c = myid()
+@gather pids c
+
+=#
+
 using Test
 using Distributed
 
-using ParallelOperations
-
 pids = addprocs(4)
-@everywhere pids using ParallelOperations
+@everywhere using ParallelOperations
+
+
 @everywhere struct TestStruct
     a
     b
@@ -12,7 +26,7 @@ end
 @everywhere iterate(p::TestStruct) = (p, nothing)
 @everywhere iterate(p::TestStruct, st) = nothing
 
-@everywhere procs() function f(a::Array)
+@everywhere procs() function testfunction(a::Array)
     for i in eachindex(a)
         a[i] = sin(a[i])
     end
@@ -33,13 +47,17 @@ end
     @test b == 1.0
 
     sendto(pids[3], a = [pi/2])
-    sendto(pids[3], f, :a)
+    sendto(pids[3], testfunction, :a)
     b = getfrom(pids[3], :(a[1]))
     @test b == 1.0
 
     transfer(pids[3], pids[4], :a, :a)
     b = getfrom(pids[4], :(a[1]))
     @test b == 1.0
+
+    @sendto pids[1] a = myid()
+    b = @getfrom pids[1] a
+    @test b == pids[1]
 end
 
 @testset "broadcast" begin
@@ -53,9 +71,13 @@ end
     @test sum(d) == 4.0
 
     bcast(pids, c = [pi/2])
-    bcast(pids, f, :c)
+    bcast(pids, testfunction, :c)
     d = gather(pids, :(c[1]))
     @test sum(d) == 4.0
+
+    @bcast pids c = myid()
+    d = @gather pids c
+    @test sum(d) == sum(pids)
 end
 
 @testset "scatter" begin
@@ -83,7 +105,7 @@ end
     @test sum(GatherSymbol) == sum(pids)
 
     bcast(pids, c = pi / 2)
-    d = gather(pids, sin, :c)
+    d = gather(sin, pids, :c)
     @test sum(d) == 4.0
 end
 

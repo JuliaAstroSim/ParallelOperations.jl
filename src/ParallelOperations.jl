@@ -5,13 +5,13 @@ using Distributed
 import Base: reduce
 
 export
-    sendto,
-    getfrom,
+    sendto, @sendto,
+    getfrom, @getfrom,
     transfer,
 
-    bcast,
+    bcast, @bcast,
     reduce,
-    gather,
+    gather, @gather,
 
     scatter,
     allgather,
@@ -30,11 +30,23 @@ function sendto(p::Int, mod::Module = Main; args...)
 end
 
 function sendto(p::Int, f::Function, expr, mod::Module = Main)
-    fetch(@spawnat(p, Core.eval(mod, Expr(:call, :(f), expr))))
+    fetch(@spawnat(p, Core.eval(mod, Expr(:call, :($f), expr))))
+end
+
+macro sendto(p, expr, mod::Symbol = :Main)
+    quote
+        Distributed.remotecall_eval($(esc(mod)), $(esc(p)), $(QuoteNode(expr)))
+    end
 end
 
 function getfrom(p::Int, expr, mod::Module = Main)
     return fetch(@spawnat(p, Core.eval(mod, expr)))
+end
+
+macro getfrom(p, obj, mod::Symbol = :Main)
+    quote
+        Distributed.remotecall_eval($(esc(mod)), $(esc(p)), $(QuoteNode(obj)))
+    end
 end
 
 function transfer(src::Int, target::Int, from_expr, to_expr, to_mod::Module = Main, from_mod::Module = Main)
@@ -60,6 +72,12 @@ end
 function bcast(pids::Array, f::Function, expr, mod::Module = Main)
     asyncmap(pids) do p
         sendto(p, f, expr, mod)
+    end
+end
+
+macro bcast(pids, expr, mod::Symbol = :Main)
+    quote
+        Distributed.remotecall_eval($(esc(mod)), $(esc(pids)), $(QuoteNode(expr)))
     end
 end
 
@@ -92,7 +110,13 @@ function gather(pids::Array, expr, mod::Module = Main)
     return [fetch(@spawnat(p, Core.eval(mod, expr))) for p in pids]
 end
 
-gather(pids::Array, f::Function, expr, mod::Module = Main) = gather(pids, :($f($expr)), mod)
+macro gather(pids, expr, mod::Symbol = :Main)
+    quote
+        [getfrom(p, $(QuoteNode(expr)), $(esc(mod))) for p in $(esc(pids))]
+    end
+end
+
+gather(f::Function, pids::Array, expr, mod::Module = Main) = gather(pids, :($f($expr)), mod)
 
 # allgather
 

@@ -68,6 +68,23 @@ transfer(2, 3, :a, :b)
 @everywhere 3 @show b
 ```
 
+Notice that functions would evaluate the parameter before sending them to remote workers. That means:
+```julia
+sendto(2, a = myid())
+b = getfrom(2, :a)
+```
+would return `b = 1` instead of `2`, because function `myid` is executed on master process.
+
+To send commands to remote, use macros:
+```julia
+@sendto 2 a = myid()
+b = getfrom(2, :a)
+# b = 2
+```
+Here `myid` is executed on process 2.
+
+This also works with `bcast` and `@bcast` (in fact `@bcast` and `@sendto` have identical codes)
+
 ### broadcast
 
 ```julia
@@ -116,6 +133,10 @@ a = collect(1:4)
 scatter(workers(), a, :b, Main)
 @everywhere workers() @show b
 ```
+
+## TODO
+
+- [ ] Check remotecall functions
 
 ## Similar packages
 
