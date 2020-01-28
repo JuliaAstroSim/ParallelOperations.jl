@@ -133,4 +133,33 @@ end
     @test sum(b) == 20.0
 end
 
+@testset "Commonly used functions" begin
+    # sum
+    @everywhere pids x = myid()
+    allsum(pids, :x, :y)
+    allsum(pids, :x)
+    @test sum(pids, :x) == 4 * sum(pids)
+    @test sum(pids, :y) == 4 * sum(pids)
+
+    # maximum
+    @everywhere pids x = myid()
+    @test maximum(pids, :x) == maximum(pids)
+
+    allmaximum(pids, :x, :y)
+    @test sum(pids, :y) == 4 * maximum(pids)
+
+    allmaximum(pids, :x)
+    @test sum(pids, :x) == 4 * maximum(pids)
+
+    # minimum
+    @everywhere pids x = myid()
+    @test minimum(pids, :x) == minimum(pids)
+
+    allminimum(pids, :x, :y)
+    @test sum(pids, :y) == 4 * minimum(pids)
+
+    allminimum(pids, :x)
+    @test sum(pids, :x) == 4 * minimum(pids)
+end
+
 rmprocs(pids)

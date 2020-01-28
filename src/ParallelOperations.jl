@@ -2,7 +2,7 @@ module ParallelOperations
 
 using Distributed
 
-import Base: reduce
+import Base: reduce, sum, maximum, minimum
 
 export
     sendto, @sendto,
@@ -15,7 +15,11 @@ export
 
     scatter,
     allgather,
-    allreduce
+    allreduce,
+
+    sum, allsum,
+    maximum, allmaximum,
+    minimum, allminimum
 
 # point-to-point
 
@@ -141,5 +145,18 @@ function allreduce(f::Function, pids::Array, src_expr, target_expr, mod::Module 
     result = reduce(f, pids, src_expr, mod)
     bcast(pids, target_expr, result, mod)
 end
+
+# Commonly used functions
+sum(pids::Array, expr, mod::Module = Main) = sum(gather(pids, expr, mod))
+allsum(pids::Array, expr, mod::Module = Main) = bcast(pids, expr, sum(pids, expr, mod), mod)
+allsum(pids::Array, src_expr, target_expr, mod::Module = Main) = bcast(pids, target_expr, sum(pids, src_expr, mod), mod)
+
+maximum(pids::Array, expr, mod::Module = Main) = maximum(gather(pids, expr, mod))
+allmaximum(pids::Array, expr, mod::Module = Main) = bcast(pids, expr, maximum(pids, expr, mod), mod)
+allmaximum(pids::Array, src_expr, target_expr, mod::Module = Main) = bcast(pids, target_expr, maximum(pids, src_expr, mod), mod)
+
+minimum(pids::Array, expr, mod::Module = Main) = minimum(gather(pids, expr, mod))
+allminimum(pids::Array, expr, mod::Module = Main) = bcast(pids, expr, minimum(pids, expr, mod), mod)
+allminimum(pids::Array, src_expr, target_expr, mod::Module = Main) = bcast(pids, target_expr, minimum(pids, src_expr, mod), mod)
 
 end

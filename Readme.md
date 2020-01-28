@@ -4,6 +4,12 @@
 
 [![codecov](https://codecov.io/gh/JuliaAstroSim/ParallelOperations.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaAstroSim/ParallelOperations.jl)
 
+Features:
+- User-friendly interface
+- 100% auto-test coverage
+- All of the operations could be executed on **specified Modules**
+- Commonly used operations
+
 ## Install
 
 ```julia
@@ -132,6 +138,19 @@ The array to scatter should have the same length as workers to receive
 a = collect(1:4)
 scatter(workers(), a, :b, Main)
 @everywhere workers() @show b
+```
+
+### Commonly used functions
+
+```julia
+@everywhere workers() x = 1.0
+
+sum(workers(), :x)
+allsum(workers(), :x)
+maximum(workers(), :x)
+allmaximum(workers(), :x)
+minimum(workers(), :x)
+allminimum(workers(), :x)
 ```
 
 ## TODO
