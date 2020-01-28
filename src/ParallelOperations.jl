@@ -124,39 +124,26 @@ gather(f::Function, pids::Array, expr, mod::Module = Main) = gather(pids, :($f($
 
 # allgather
 
-function allgather(pids::Array, src_expr, mod::Module = Main)
-    result = gather(pids, src_expr, mod)
-    bcast(pids, src_expr, result, mod)
-end
-
-function allgather(pids::Array, src_expr, target_expr, mod::Module = Main)
+function allgather(pids::Array, src_expr, target_expr = src_expr, mod::Module = Main)
     result = gather(pids, src_expr, mod)
     bcast(pids, target_expr, result, mod)
 end
 
 # allreduce
 
-function allreduce(f::Function, pids::Array, src_expr, mod::Module = Main)
-    result = reduce(f, pids, src_expr, mod)
-    bcast(pids, src_expr, result, mod)
-end
-
-function allreduce(f::Function, pids::Array, src_expr, target_expr, mod::Module = Main)
+function allreduce(f::Function, pids::Array, src_expr, target_expr = src_expr, mod::Module = Main)
     result = reduce(f, pids, src_expr, mod)
     bcast(pids, target_expr, result, mod)
 end
 
 # Commonly used functions
 sum(pids::Array, expr, mod::Module = Main) = sum(gather(pids, expr, mod))
-allsum(pids::Array, expr, mod::Module = Main) = bcast(pids, expr, sum(pids, expr, mod), mod)
-allsum(pids::Array, src_expr, target_expr, mod::Module = Main) = bcast(pids, target_expr, sum(pids, src_expr, mod), mod)
+allsum(pids::Array, src_expr, target_expr = src_expr, mod::Module = Main) = bcast(pids, target_expr, sum(pids, src_expr, mod), mod)
 
 maximum(pids::Array, expr, mod::Module = Main) = maximum(gather(pids, expr, mod))
-allmaximum(pids::Array, expr, mod::Module = Main) = bcast(pids, expr, maximum(pids, expr, mod), mod)
-allmaximum(pids::Array, src_expr, target_expr, mod::Module = Main) = bcast(pids, target_expr, maximum(pids, src_expr, mod), mod)
+allmaximum(pids::Array, src_expr, target_expr = src_expr, mod::Module = Main) = bcast(pids, target_expr, maximum(pids, src_expr, mod), mod)
 
 minimum(pids::Array, expr, mod::Module = Main) = minimum(gather(pids, expr, mod))
-allminimum(pids::Array, expr, mod::Module = Main) = bcast(pids, expr, minimum(pids, expr, mod), mod)
-allminimum(pids::Array, src_expr, target_expr, mod::Module = Main) = bcast(pids, target_expr, minimum(pids, src_expr, mod), mod)
+allminimum(pids::Array, src_expr, target_expr = src_expr, mod::Module = Main) = bcast(pids, target_expr, minimum(pids, src_expr, mod), mod)
 
 end
