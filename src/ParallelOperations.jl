@@ -62,19 +62,19 @@ end
 # broadcast
 
 function bcast(pids::Array, expr, data, mod::Module = Main)
-    asyncmap(pids) do p
+    for p in pids
         sendto(p, expr, data, mod)
     end
 end
 
 function bcast(pids::Array, mod::Module = Main; args...)
-    asyncmap(pids) do p
+    for p in pids
         sendto(p, mod; args...)
     end
 end
 
 function bcast(pids::Array, f::Function, expr, mod::Module = Main)
-    asyncmap(pids) do p
+    for p in pids
         sendto(p, f, expr, mod)
     end
 end
@@ -100,7 +100,7 @@ end
 # Reduce
 
 function Base.reduce(f::Function, pids::Array, expr, mod::Module = Main)
-    results = asyncmap(pids) do p
+    results = map(pids) do p
         remotecall_fetch(p) do
             return reduce(f, Core.eval(mod, expr))
         end
