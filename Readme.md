@@ -40,8 +40,8 @@ end
 @everywhere iterate(p::TestStruct) = (p, nothing)
 @everywhere iterate(p::TestStruct, st) = nothing
 
-# Functions to execute on remote workers should be defined on source worker
-function f!(a::Array)
+# Functions to execute on remote workers should be known by target worker
+@everywhere function f!(a::Array)
     for i in eachindex(a)
         a[i] = sin(a[i])
     end
@@ -156,6 +156,7 @@ allminimum(workers(), :x)
 ## TODO
 
 - [ ] Check remotecall functions
+- [ ] Benchmark and optimization
 
 ## Similar packages
 
