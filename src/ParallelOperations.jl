@@ -37,6 +37,15 @@ function sendto(p::Int, f::Function, expr, mod::Module = Main)
     fetch(@spawnat(p, Core.eval(mod, Expr(:call, :($f), expr))))
 end
 
+function sendto(p::Int, f::Function, mod::Module = Main)
+    expr = Meta.parse("function " * string(f) * " end")
+    Distributed.remotecall_eval(mod, p, expr)
+
+    for m in methods(f)
+        Distributed.remotecall_eval(mod, p, m)
+    end
+end
+
 macro sendto(p, expr, mod::Symbol = :Main)
     quote
         Distributed.remotecall_eval($(esc(mod)), $(esc(p)), $(QuoteNode(expr)))
@@ -76,6 +85,15 @@ end
 function bcast(pids::Array, f::Function, expr, mod::Module = Main)
     for p in pids
         sendto(p, f, expr, mod)
+    end
+end
+
+function bcast(pids::Array, f::Function, mod::Module = Main)
+    expr = Meta.parse("function " * string(f) * " end")
+    Distributed.remotecall_eval(mod, pids, expr)
+
+    for m in methods(f)
+        Distributed.remotecall_eval(mod, pids, m)
     end
 end
 

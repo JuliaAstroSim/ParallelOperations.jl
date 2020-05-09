@@ -9,6 +9,7 @@ Features:
 - 100% auto-test coverage
 - All of the operations could be executed on **specified Modules**
 - Commonly used operations
+- Send function methods to remote at runtime
 
 ## Install
 
@@ -151,6 +152,18 @@ maximum(workers(), :x)
 allmaximum(workers(), :x)
 minimum(workers(), :x)
 allminimum(workers(), :x)
+```
+
+### Send function to workers
+
+```julia
+fun() = 1
+
+sendto(2, fun)
+getfrom(2, :(fun()))
+
+bcast(workers(), fun)
+gather(workers(), :(fun()))
 ```
 
 ## TODO
