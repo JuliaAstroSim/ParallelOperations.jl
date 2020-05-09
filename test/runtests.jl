@@ -162,12 +162,13 @@ end
     @test sum(pids, :x) == 4 * minimum(pids)
 end
 
+fun() = 123
+fun2() = 4
+
 @testset "function" begin
-    fun() = 123
     sendto(2, fun)
     @test getfrom(2, :(fun())) == 123
 
-    fun2() = 4
     bcast(pids, fun2)
     @test gather(pids, :(fun2())) == 16
 end
