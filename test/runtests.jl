@@ -170,7 +170,7 @@ fun2() = 4
     @test getfrom(2, :(fun())) == 123
 
     bcast(pids, fun2)
-    @test gather(pids, :(fun2())) == 16
+    @test sum(gather(pids, :(fun2()))) == 16
 end
 
 rmprocs(pids)
