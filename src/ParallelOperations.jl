@@ -34,7 +34,10 @@ function sendto(p::Int, mod::Module = Main; args...)
 end
 
 function sendto(p::Int, f::Function, expr, mod::Module = Main)
-    fetch(@spawnat(p, Core.eval(mod, Expr(:call, :($f), expr))))
+    e = fetch(@spawnat(p, Core.eval(mod, Expr(:call, :($f), expr))))
+    if e isa Exception
+        throw(e)
+    end
 end
 
 function sendto(p::Int, f::Function, mod::Module = Main)
@@ -42,7 +45,11 @@ function sendto(p::Int, f::Function, mod::Module = Main)
     Distributed.remotecall_eval(mod, p, expr)
 
     for m in methods(f)
-        Distributed.remotecall_eval(mod, p, m)
+        e = fetch(@spawnat(p, Core.eval(mod, Expr(:call, :($f)))))
+        if e isa Exception
+            throw(e)
+        end
+        #Distributed.remotecall_eval(mod, p, m)
     end
 end
 
@@ -89,11 +96,8 @@ function bcast(pids::Array, f::Function, expr, mod::Module = Main)
 end
 
 function bcast(pids::Array, f::Function, mod::Module = Main)
-    expr = Meta.parse("function " * string(f) * " end")
-    Distributed.remotecall_eval(mod, pids, expr)
-
-    for m in methods(f)
-        Distributed.remotecall_eval(mod, pids, m)
+    for p in pids
+        sendto(p, f, mod)
     end
 end
 
