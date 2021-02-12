@@ -95,7 +95,7 @@ This also works with `bcast` and `@bcast` (in fact `@bcast` and `@sendto` have i
 ### broadcast
 
 ```julia
-bcast(workers(), :c, 1.0, Parallel)
+bcast(workers(), :c, 1.0, ParallelOperations)
 
 bcast(workers(), c = [pi/2])
 
@@ -166,6 +166,39 @@ bcast(workers(), fun)
 gather(workers(), :(fun()))
 ```
 
+### Type-stable
+
+```julia
+using Distributed
+addprocs(1)
+@everywhere using ParallelOperations
+
+function testPO()
+    @sendto 2 a=5
+    a = (@getfrom 2 a)::Int64 # This will restrict the type of a, making both a and b type-stable
+
+    b = a+1
+end
+
+function testPOunstable()
+    @sendto 2 a=5
+    a = @getfrom 2 a
+
+    b = a+1
+end
+
+function testPOfun()
+    @sendto 2 a=5
+    a = (getfrom(2, :a))::Int64 # This will restrict the type of a, making both a and b type-stable
+
+    b = a+1
+end
+
+@code_warntype testPO()
+@code_warntype testPOunstable()
+@code_warntype testPOfun()
+```
+
 ## TODO
 
 - [ ] Check remotecall functions
@@ -174,3 +207,14 @@ gather(workers(), :(fun()))
 ## Similar packages
 
 [ParallelDataTransfer](https://github.com/ChrisRackauckas/ParallelDataTransfer.jl)
+
+## Package ecosystem
+
+- Basic data structure: [PhysicalParticles.jl](https://github.com/JuliaAstroSim/PhysicalParticles.jl)
+- File I/O: [AstroIO.jl](https://github.com/JuliaAstroSim/AstroIO.jl)
+- Initial Condition: [AstroIC.jl](https://github.com/JuliaAstroSim/AstroIC.jl)
+- Parallelism: [ParallelOperations.jl](https://github.com/JuliaAstroSim/ParallelOperations.jl)
+- Trees: [PhysicalTrees.jl](https://github.com/JuliaAstroSim/PhysicalTrees.jl)
+- Meshes: [PhysicalMeshes.jl](https://github.com/JuliaAstroSim/PhysicalMeshes.jl)
+- Plotting: [AstroPlot.jl](https://github.com/JuliaAstroSim/AstroPlot.jl)
+- Simulation: [ISLENT](https://github.com/JuliaAstroSim/ISLENT)
