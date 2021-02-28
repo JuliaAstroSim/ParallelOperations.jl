@@ -33,20 +33,20 @@ function sendto(p::Int, mod::Module = Main; args...)
     end
 end
 
-function sendto(p::Int, f::Function, expr, mod::Module = Main)
-    e = fetch(@spawnat(p, Core.eval(mod, Expr(:call, :($f), expr))))
+function sendto(p::Int, f::Function, expr, mod::Module = Main; args = ())
+    e = fetch(@spawnat(p, Core.eval(mod, Expr(:call, :($f), expr, :($args...)))))
     if e isa Exception
         throw(e)
     end
     return e
 end
 
-function sendto(p::Int, f::Function, mod::Module = Main)
+function sendto(p::Int, f::Function, mod::Module = Main; args = ())
     #expr = Meta.parse("function " * string(f) * " end")
     #Distributed.remotecall_eval(mod, p, expr)
 
     #for m in methods(f)
-        e = fetch(@spawnat(p, Core.eval(mod, Expr(:call, :($f)))))
+        e = fetch(@spawnat(p, Core.eval(mod, Expr(:call, :($f), :($args...)))))
         if e isa Exception
             throw(e)
         end
@@ -91,15 +91,15 @@ function bcast(pids::Array, mod::Module = Main; args...)
     end
 end
 
-function bcast(pids::Array, f::Function, expr, mod::Module = Main)
+function bcast(pids::Array, f::Function, expr, mod::Module = Main; args...)
     for p in pids
-        sendto(p, f, expr, mod)
+        sendto(p, f, expr, mod; args...)
     end
 end
 
-function bcast(pids::Array, f::Function, mod::Module = Main)
+function bcast(pids::Array, f::Function, mod::Module = Main; args...)
     for p in pids
-        sendto(p, f, mod)
+        sendto(p, f, mod; args...)
     end
 end
 
@@ -144,7 +144,8 @@ macro gather(pids, expr, mod::Symbol = :Main)
     end
 end
 
-gather(f::Function, pids::Array, expr, mod::Module = Main) = gather(pids, :($f($expr)), mod)
+gather(f::Function, pids::Array, mod::Module = Main; args...) = [sendto(p, f; args...) for p in pids]
+gather(f::Function, pids::Array, expr, mod::Module = Main; args...) = [sendto(p, f, expr; args...) for p in pids]
 
 # allgather
 
