@@ -157,13 +157,19 @@ allminimum(workers(), :x)
 ### Send function to workers
 
 ```julia
-fun() = 1
+@everywhere fun() = 1
 
 sendto(2, fun)
 getfrom(2, :(fun()))
 
 bcast(workers(), fun)
 gather(workers(), :(fun()))
+```
+
+Functions with multiple arguments:
+```julia
+@everywhere m(x,y,z) = x+y+z
+sendto(2, m, :((1,2,3)...))
 ```
 
 ### Type-stable

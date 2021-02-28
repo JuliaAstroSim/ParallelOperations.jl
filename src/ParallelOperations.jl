@@ -38,19 +38,21 @@ function sendto(p::Int, f::Function, expr, mod::Module = Main)
     if e isa Exception
         throw(e)
     end
+    return e
 end
 
 function sendto(p::Int, f::Function, mod::Module = Main)
-    expr = Meta.parse("function " * string(f) * " end")
-    Distributed.remotecall_eval(mod, p, expr)
+    #expr = Meta.parse("function " * string(f) * " end")
+    #Distributed.remotecall_eval(mod, p, expr)
 
-    for m in methods(f)
+    #for m in methods(f)
         e = fetch(@spawnat(p, Core.eval(mod, Expr(:call, :($f)))))
         if e isa Exception
             throw(e)
         end
         #Distributed.remotecall_eval(mod, p, m)
-    end
+    #end
+    return e
 end
 
 macro sendto(p, expr, mod::Symbol = :Main)

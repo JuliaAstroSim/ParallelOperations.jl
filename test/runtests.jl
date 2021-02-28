@@ -162,8 +162,8 @@ end
     @test sum(pids, :x) == 4 * minimum(pids)
 end
 
-fun() = 123
-fun2() = 4
+@everywhere fun() = 123
+@everywhere fun2() = 4
 
 @testset "function" begin
     sendto(2, fun)
