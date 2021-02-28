@@ -144,8 +144,8 @@ macro gather(pids, expr, mod::Symbol = :Main)
     end
 end
 
-gather(f::Function, pids::Array, mod::Module = Main; args...) = [sendto(p, f; args...) for p in pids]
-gather(f::Function, pids::Array, expr, mod::Module = Main; args...) = [sendto(p, f, expr; args...) for p in pids]
+gather(f::Function, pids::Array, mod::Module = Main; args...) = [sendto(p, f, mod; args...) for p in pids]
+gather(f::Function, pids::Array, expr, mod::Module = Main; args...) = [sendto(p, f, expr, mod; args...) for p in pids]
 
 # allgather
 
