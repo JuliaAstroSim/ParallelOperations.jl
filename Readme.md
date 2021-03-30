@@ -177,7 +177,8 @@ Arguments can also be passed by `args` keyword, which is more user-friendly:
 x = 1
 sendto(2, m, args = (1,2,3))
 sendto(2, m, :($x), args = (2, 3))
-gather([1,2], m, args = (1,2,3))
+gather(m, [1,2], args = (1,2,3))
+bcast([1,2], m, args = (1,2,3))
 ```
 
 ### Type-stable
