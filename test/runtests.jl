@@ -82,11 +82,11 @@ end
 
 @testset "scatter" begin
     a = collect(1:4)
-    scatter(pids, a, :b, Main)
+    scatterto(pids, a, :b, Main)
     b = gather(pids, :b, Main)
     @test sum(a) == sum(b)
 
-    @test_throws ErrorException scatter(pids, collect(1:5), :b, Main)
+    @test_throws ErrorException scatterto(pids, collect(1:5), :b, Main)
 end
 
 @testset "Reduce" begin

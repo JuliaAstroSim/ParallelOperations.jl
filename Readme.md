@@ -137,7 +137,7 @@ The array to scatter should have the same length as workers to receive
 
 ```julia
 a = collect(1:4)
-scatter(workers(), a, :b, Main)
+scatterto(workers(), a, :b, Main)
 @everywhere workers() @show b
 ```
 

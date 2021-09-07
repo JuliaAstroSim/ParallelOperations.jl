@@ -13,7 +13,7 @@ export
     reduce,
     gather, @gather,
 
-    scatter,
+    scatterto,
     allgather,
     allreduce,
 
@@ -111,7 +111,7 @@ end
 
 # scatter
 
-function scatter(pids::Array, data::Array, expr, mod::Module = Main)
+function scatterto(pids::Array, data::Array, expr, mod::Module = Main)
     if length(data) == length(pids)
         for i in eachindex(pids)
             @inbounds sendto(pids[i], expr, data[i], mod)
