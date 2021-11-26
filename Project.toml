@@ -1,7 +1,7 @@
 name = "ParallelOperations"
 uuid = "09c1cff2-b94d-4c31-85a1-721512e21c63"
 authors = ["islent <leoislent@gmail.com>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"

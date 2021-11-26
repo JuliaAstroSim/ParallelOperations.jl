@@ -107,6 +107,9 @@ end
     bcast(pids, c = pi / 2)
     d = gather(sin, pids, :c)
     @test sum(d) == 4.0
+
+    d = gather(myid, pids)
+    @test sum(d) == 14
 end
 
 @testset "Allgather" begin
