@@ -92,14 +92,14 @@ function bcast(pids::Array, mod::Module = Main; args...)
 end
 
 function bcast(pids::Array, f::Function, expr, mod::Module = Main; args...)
-    for p in pids
-        sendto(p, f, expr, mod; args...)
+    @sync for p in pids
+        @async sendto(p, f, expr, mod; args...)
     end
 end
 
 function bcast(pids::Array, f::Function, mod::Module = Main; args...)
-    for p in pids
-        sendto(p, f, mod; args...)
+    @sync for p in pids
+        @async sendto(p, f, mod; args...)
     end
 end
 
