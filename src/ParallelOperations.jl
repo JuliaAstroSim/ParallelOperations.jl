@@ -162,8 +162,8 @@ function allreduce(f::Function, pids::Array, src_expr, target_expr = src_expr, m
 end
 
 # Commonly used functions
-sum(pids::Array, expr, mod::Module = Main) = sum(gather(pids, expr, mod))
-allsum(pids::Array, src_expr, target_expr = src_expr, mod::Module = Main) = bcast(pids, target_expr, sum(pids, src_expr, mod), mod)
+sum(pids::Array, expr::Union{Symbol, Expr}, mod::Module = Main) = sum(gather(pids, expr, mod))
+allsum(pids::Array, src_expr::Union{Symbol, Expr}, target_expr = src_expr, mod::Module = Main) = bcast(pids, target_expr, sum(pids, src_expr, mod), mod)
 
 maximum(pids::Array, expr, mod::Module = Main) = maximum(gather(pids, expr, mod))
 allmaximum(pids::Array, src_expr, target_expr = src_expr, mod::Module = Main) = bcast(pids, target_expr, maximum(pids, src_expr, mod), mod)
