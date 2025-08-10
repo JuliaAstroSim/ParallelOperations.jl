@@ -24,13 +24,12 @@ export
 # point-to-point
 
 function sendto(p::Int, expr, data, mod::Module = Main)
-    @sync @spawnat(p, Core.eval(mod, Expr(:(=), expr, data)))
+    @async @spawnat(p, Core.eval(mod, Expr(:(=), expr, data)))
 end
 
 function sendto(p::Int, mod::Module = Main; args...)
-    @sync for (nm, val) in args
-        @spawnat(p, Core.eval(mod, Expr(:(=), nm, val)))
-    end
+    data = Dict(nm => val for (nm, val) in args)
+    @async @spawnat(p, Core.eval(mod, Expr(:(=), :parallel_data, data)))
 end
 
 function sendto(p::Int, f::Function, expr, mod::Module = Main; args = ())
@@ -80,13 +79,13 @@ end
 # broadcast
 
 function bcast(pids::Array, expr, data, mod::Module = Main)
-    for p in pids
+    @sync for p in pids
         sendto(p, expr, data, mod)
     end
 end
 
 function bcast(pids::Array, mod::Module = Main; args...)
-    for p in pids
+    @sync for p in pids
         sendto(p, mod; args...)
     end
 end
@@ -113,7 +112,7 @@ end
 
 function scatterto(pids::Array, data::Array, expr, mod::Module = Main)
     if length(data) == length(pids)
-        for i in eachindex(pids)
+        @sync for i in eachindex(pids)
             @inbounds sendto(pids[i], expr, data[i], mod)
         end
     else
@@ -135,7 +134,12 @@ end
 # Gather
 
 function gather(pids::Array, expr, mod::Module = Main)
-    return [fetch(@spawnat(p, Core.eval(mod, expr))) for p in pids]
+    # return [fetch(@spawnat(p, Core.eval(mod, expr))) for p in pids]
+    results = Vector{Any}(undef, length(pids))
+    @sync for (i, p) in enumerate(pids)
+        @async results[i] = fetch(@spawnat(p, Core.eval(mod, expr)))
+    end
+    return results
 end
 
 macro gather(pids, expr, mod::Symbol = :Main)
