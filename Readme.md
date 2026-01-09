@@ -146,11 +146,8 @@ scatterto(workers(), a, :b, Main)
 ```julia
 @everywhere workers() x = 1.0
 
-sum(workers(), :x)
 allsum(workers(), :x)
-maximum(workers(), :x)
 allmaximum(workers(), :x)
-minimum(workers(), :x)
 allminimum(workers(), :x)
 ```
 

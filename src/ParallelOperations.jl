@@ -2,7 +2,7 @@ module ParallelOperations
 
 using Distributed
 
-import Base: reduce, sum, maximum, minimum
+import Base: reduce
 
 export
     sendto, @sendto,
@@ -17,19 +17,24 @@ export
     allgather,
     allreduce,
 
-    sum, allsum,
-    maximum, allmaximum,
-    minimum, allminimum
+    allsum,
+    allmaximum,
+    allminimum
 
 # point-to-point
 
 function sendto(p::Int, expr, data, mod::Module = Main)
-    @async @spawnat(p, Core.eval(mod, Expr(:(=), expr, data)))
+    remotecall_fetch(p) do
+        Core.eval(mod, Expr(:(=), expr, data))
+    end
 end
 
 function sendto(p::Int, mod::Module = Main; args...)
-    data = Dict(nm => val for (nm, val) in args)
-    @async @spawnat(p, Core.eval(mod, Expr(:(=), :parallel_data, data)))
+    for (nm, val) in args
+        remotecall_fetch(p) do
+            Core.eval(mod, Expr(:(=), nm, val))
+        end
+    end
 end
 
 function sendto(p::Int, f::Function, expr, mod::Module = Main; args = ())
@@ -61,7 +66,9 @@ macro sendto(p, expr, mod::Symbol = :Main)
 end
 
 function getfrom(p::Int, expr, mod::Module = Main)
-    return fetch(@spawnat(p, Core.eval(mod, expr)))
+    return remotecall_fetch(p) do
+        Core.eval(mod, expr)
+    end
 end
 
 macro getfrom(p, obj, mod::Symbol = :Main)
@@ -92,13 +99,13 @@ end
 
 function bcast(pids::Array, f::Function, expr, mod::Module = Main; args...)
     @sync for p in pids
-        @async sendto(p, f, expr, mod; args...)
+        sendto(p, f, expr, mod; args...)
     end
 end
 
 function bcast(pids::Array, f::Function, mod::Module = Main; args...)
     @sync for p in pids
-        @async sendto(p, f, mod; args...)
+        sendto(p, f, mod; args...)
     end
 end
 
@@ -166,13 +173,22 @@ function allreduce(f::Function, pids::Array, src_expr, target_expr = src_expr, m
 end
 
 # Commonly used functions
-sum(pids::Array, expr::Union{Symbol, Expr}, mod::Module = Main) = sum(gather(pids, expr, mod))
-allsum(pids::Array, src_expr::Union{Symbol, Expr}, target_expr = src_expr, mod::Module = Main) = bcast(pids, target_expr, sum(pids, src_expr, mod), mod)
+function _allsum(pids::Array, expr::Union{Symbol, Expr}, mod::Module = Main)
+    return Base.sum(gather(pids, expr, mod))
+end
 
-maximum(pids::Array, expr, mod::Module = Main) = maximum(gather(pids, expr, mod))
-allmaximum(pids::Array, src_expr, target_expr = src_expr, mod::Module = Main) = bcast(pids, target_expr, maximum(pids, src_expr, mod), mod)
+allsum(pids::Array, src_expr::Union{Symbol, Expr}, target_expr = src_expr, mod::Module = Main) = bcast(pids, target_expr, _allsum(pids, src_expr, mod), mod)
 
-minimum(pids::Array, expr, mod::Module = Main) = minimum(gather(pids, expr, mod))
-allminimum(pids::Array, src_expr, target_expr = src_expr, mod::Module = Main) = bcast(pids, target_expr, minimum(pids, src_expr, mod), mod)
+function _allmaximum(pids::Array, expr, mod::Module = Main)
+    return Base.maximum(gather(pids, expr, mod))
+end
+
+allmaximum(pids::Array, src_expr, target_expr = src_expr, mod::Module = Main) = bcast(pids, target_expr, _allmaximum(pids, src_expr, mod), mod)
+
+function _allminimum(pids::Array, expr, mod::Module = Main)
+    return Base.minimum(gather(pids, expr, mod))
+end
+
+allminimum(pids::Array, src_expr, target_expr = src_expr, mod::Module = Main) = bcast(pids, target_expr, _allminimum(pids, src_expr, mod), mod)
 
 end

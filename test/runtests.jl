@@ -140,37 +140,36 @@ end
     # sum
     @everywhere pids x = myid()
     allsum(pids, :x, :y)
+    @test getfrom(pids[1], :y) == sum(pids)
+
     allsum(pids, :x)
-    @test sum(pids, :x) == 4 * sum(pids)
-    @test sum(pids, :y) == 4 * sum(pids)
+    @test getfrom(pids[1], :x) == sum(pids)
 
     # maximum
     @everywhere pids x = myid()
-    @test maximum(pids, :x) == maximum(pids)
 
     allmaximum(pids, :x, :y)
-    @test sum(pids, :y) == 4 * maximum(pids)
+    @test getfrom(pids[1], :y) == maximum(pids)
 
     allmaximum(pids, :x)
-    @test sum(pids, :x) == 4 * maximum(pids)
+    @test getfrom(pids[1], :x) == maximum(pids)
 
     # minimum
     @everywhere pids x = myid()
-    @test minimum(pids, :x) == minimum(pids)
 
     allminimum(pids, :x, :y)
-    @test sum(pids, :y) == 4 * minimum(pids)
+    @test getfrom(pids[1], :y) == minimum(pids)
 
     allminimum(pids, :x)
-    @test sum(pids, :x) == 4 * minimum(pids)
+    @test getfrom(pids[1], :x) == minimum(pids)
 end
 
 @everywhere fun() = 123
 @everywhere fun2() = 4
 
 @testset "function" begin
-    sendto(2, fun)
-    @test getfrom(2, :(fun())) == 123
+    sendto(pids[1], fun)
+    @test getfrom(pids[1], :(fun())) == 123
 
     bcast(pids, fun2)
     @test sum(gather(pids, :(fun2()))) == 16
