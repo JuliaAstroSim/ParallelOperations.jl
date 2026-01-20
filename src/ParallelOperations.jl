@@ -187,7 +187,7 @@ function bcast(pids::Array, mod::Module = Main; timeout::Float64 = 5.0, args...)
     end
 end
 
-function bcast_async(pids::Array, f::Function, expr, mod::Module = Main)
+function bcast_async(pids::Array, f::Function, expr, mod::Module = Main; args...) 
     if isempty(pids)
         return FutureOrNothing[]
     end
@@ -195,15 +195,15 @@ function bcast_async(pids::Array, f::Function, expr, mod::Module = Main)
     futures = FutureOrNothing[]
     
     if length(pids) == 1
-        future = sendto_async(pids[1], f, expr, mod)
+        future = sendto_async(pids[1], f, expr, mod; args...)
         push!(futures, future)
     else
         mid = length(pids) ÷ 2
         left = pids[1:mid]
         right = pids[mid+1:end]
         
-        left_futures = bcast_async(left, f, expr, mod)
-        right_futures = bcast_async(right, f, expr, mod)
+        left_futures = bcast_async(left, f, expr, mod; args...)
+        right_futures = bcast_async(right, f, expr, mod; args...)
         
         append!(futures, left_futures)
         append!(futures, right_futures)
@@ -212,8 +212,8 @@ function bcast_async(pids::Array, f::Function, expr, mod::Module = Main)
     return futures
 end
 
-function bcast(pids::Array, f::Function, expr, mod::Module = Main; timeout::Float64 = 5.0)
-    futures = bcast_async(pids, f, expr, mod)
+function bcast(pids::Array, f::Function, expr, mod::Module = Main; timeout::Float64 = 5.0, args...) 
+    futures = bcast_async(pids, f, expr, mod; args...)
     for future in futures
         if future isa Future
             fetch_with_timeout(future, timeout)
@@ -221,7 +221,7 @@ function bcast(pids::Array, f::Function, expr, mod::Module = Main; timeout::Floa
     end
 end
 
-function bcast_async(pids::Array, f::Function, mod::Module = Main)
+function bcast_async(pids::Array, f::Function, mod::Module = Main; args...) 
     if isempty(pids)
         return FutureOrNothing[]
     end
@@ -229,15 +229,15 @@ function bcast_async(pids::Array, f::Function, mod::Module = Main)
     futures = FutureOrNothing[]
     
     if length(pids) == 1
-        future = sendto_async(pids[1], f, mod)
+        future = sendto_async(pids[1], f, mod; args...)
         push!(futures, future)
     else
         mid = length(pids) ÷ 2
         left = pids[1:mid]
         right = pids[mid+1:end]
         
-        left_futures = bcast_async(left, f, mod)
-        right_futures = bcast_async(right, f, mod)
+        left_futures = bcast_async(left, f, mod; args...)
+        right_futures = bcast_async(right, f, mod; args...)
         
         append!(futures, left_futures)
         append!(futures, right_futures)
@@ -246,8 +246,8 @@ function bcast_async(pids::Array, f::Function, mod::Module = Main)
     return futures
 end
 
-function bcast(pids::Array, f::Function, mod::Module = Main; timeout::Float64 = 5.0)
-    futures = bcast_async(pids, f, mod)
+function bcast(pids::Array, f::Function, mod::Module = Main; timeout::Float64 = 5.0, args...) 
+    futures = bcast_async(pids, f, mod; args...)
     for future in futures
         if future isa Future
             fetch_with_timeout(future, timeout)
