@@ -114,8 +114,12 @@ end
 
 function transfer(src::Int, target::Int, from_expr, to_expr, to_mod::Module = Main, from_mod::Module = Main)
     r = RemoteChannel(src)
-    @spawnat(src, put!(r, Core.eval(from_mod, from_expr)))
-    @sync @spawnat(target, Core.eval(to_mod, Expr(:(=), to_expr, fetch(r))))
+    try
+        @spawnat(src, put!(r, Core.eval(from_mod, from_expr)))
+        @sync @spawnat(target, Core.eval(to_mod, Expr(:(=), to_expr, fetch(r))))
+    finally
+        close(r)
+    end
 end
 
 # broadcast
@@ -296,11 +300,37 @@ function Base.reduce(f::Function, pids::Array, expr, mod::Module = Main; timeout
     futures = reduce_async(f, pids, expr, mod)
     
     local_results = Vector{Any}(undef, length(futures))
-    @sync for (i, future) in enumerate(futures)
-        @async local_results[i] = fetch_with_timeout(future, timeout)
-    end
     
-    return reduce(f, local_results)
+    try
+        @sync for (i, future) in enumerate(futures)
+            @async begin
+                try
+                    local_results[i] = fetch_with_timeout(future, timeout)
+                catch e
+                    local_results[i] = e
+                end
+            end
+        end
+        
+        for (i, result) in enumerate(local_results)
+            if result isa Exception
+                throw(result)
+            end
+        end
+        
+        return reduce(f, local_results)
+    catch e
+        for future in futures
+            if isopen(future)
+                try
+                    fetch(future)
+                catch
+                    # ignore error
+                end
+            end
+        end
+        rethrow(e)
+    end
 end
 
 function gather_async(pids::Array, expr, mod::Module = Main)
@@ -312,11 +342,36 @@ function gather(pids::Array, expr, mod::Module = Main; timeout::Float64 = 5.0)
     futures = gather_async(pids, expr, mod)
     results = Vector{Any}(undef, length(futures))
     
-    @sync for (i, future) in enumerate(futures)
-        @async results[i] = fetch_with_timeout(future, timeout)
+    try
+        @sync for (i, future) in enumerate(futures)
+            @async begin
+                try
+                    results[i] = fetch_with_timeout(future, timeout)
+                catch e
+                    results[i] = e
+                end
+            end
+        end
+        
+        for (i, result) in enumerate(results)
+            if result isa Exception
+                throw(result)
+            end
+        end
+        
+        return results
+    catch e
+        for future in futures
+            if isopen(future)
+                try
+                    fetch(future)
+                catch
+                    # ignore error
+                end
+            end
+        end
+        rethrow(e)
     end
-    
-    return results
 end
 
 macro gather(pids, expr, mod::Symbol = :Main)
@@ -366,11 +421,25 @@ function gather(f::Function, pids::Array, expr, mod::Module = Main; timeout::Flo
 end
 
 function allgather_async(pids::Array, src_expr, target_expr = src_expr, mod::Module = Main)
+    #TODO fully async
     gather_futures = gather_async(pids, src_expr, mod)
-    gather_result = fetch.(gather_futures)
-    bcast_futures = bcast_async(pids, target_expr, gather_result, mod)
     
-    return bcast_futures
+    try
+        gather_result = fetch.(gather_futures)
+        bcast_futures = bcast_async(pids, target_expr, gather_result, mod)
+        return bcast_futures
+    catch e
+        for future in gather_futures
+            if isopen(future)
+                try
+                    fetch(future)
+                catch
+                    # ignore error
+                end
+            end
+        end
+        rethrow(e)
+    end
 end
 
 function allgather(pids::Array, src_expr, target_expr = src_expr, mod::Module = Main; timeout::Float64 = 5.0)
@@ -379,11 +448,25 @@ function allgather(pids::Array, src_expr, target_expr = src_expr, mod::Module = 
 end
 
 function allreduce_async(f::Function, pids::Array, src_expr, target_expr = src_expr, mod::Module = Main)
+    #TODO fully async
     reduce_futures = reduce_async(f, pids, src_expr, mod)
-    reduce_result = reduce(f, fetch.(reduce_futures))
-    bcast_futures = bcast_async(pids, target_expr, reduce_result, mod)
     
-    return bcast_futures
+    try
+        reduce_result = reduce(f, fetch.(reduce_futures))
+        bcast_futures = bcast_async(pids, target_expr, reduce_result, mod)
+        return bcast_futures
+    catch e
+        for future in reduce_futures
+            if isopen(future)
+                try
+                    fetch(future)
+                catch
+                    # ignore error
+                end
+            end
+        end
+        rethrow(e)
+    end
 end
 
 function allreduce(f::Function, pids::Array, src_expr, target_expr = src_expr, mod::Module = Main; timeout::Float64 = 5.0)
